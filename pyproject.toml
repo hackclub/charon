@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "aiohttp>=3.12.14",
+    "aiohttp[speedups]>=3.12.14",
     "astral>=3.2",
     "fastapi>=0.116.1",
     "matplotlib>=3.10.5",
