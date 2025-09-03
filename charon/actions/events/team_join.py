@@ -78,13 +78,6 @@ async def handle_team_join(client: AsyncWebClient, event: dict):
             )
             return
 
-        response_json = await response.json()
-        if not response_json.get("ok", False):
-            logger.error(
-                f"Program webhook error: {response_json.get('error', 'Unknown error')}"
-            )
-            return
-
     # Send a welcome message to the new user
     try:
         await client.chat_postMessage(

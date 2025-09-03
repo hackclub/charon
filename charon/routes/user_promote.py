@@ -38,7 +38,31 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         if not global_settings:
             logger.error("This should never happen, but global settings not found.")
 
-    verification_status = check_identity(data.id)
+    user_info = await env.slack_client.users_info(user=data.id)
+    if not user_info.get("ok", False):
+        logger.error(
+            f"Failed to fetch user info for {data.id}: {user_info.get('error', 'Unknown error')}"
+        )
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": "user_not_found",
+                "message": f"User with ID {data.id} not found",
+            },
+        )
+    user = user_info.get("user", {})
+    email = user.get("profile", {}).get("email")
+    if not email:
+        logger.error(f"User {data.id} does not have an email address")
+        return JSONResponse(
+            status_code=422,
+            content={
+                "error": "email_not_found",
+                "message": "User does not have an email address",
+            },
+        )
+
+    verification_status = await check_identity(email)
     if verification_status == VerificationStatus.VERIFIED_BUT_OVER_18:
         logger.info(f"User {data.id} is over 18, not promoting")
 
@@ -63,7 +87,6 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
             content={
                 "error": "verification_failed",
                 "message": "User does not have a verified identity",
-                "status": str(verification_status),
             },
         )
 
@@ -79,17 +102,14 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
 
     headers = {
         "Cookie": f"d={xoxd_token}",
-        "Content-Type": "application/json",
+        "Content-Type": "application/json; charset=utf-8",
         "Authorization": f"Bearer {xoxc}",
     }
 
-    body = {
-        "user": data.id,
-        "token": xoxc,
-    }
+    body = {"user": data.id}
 
     async with env.http.post(
-        f"https://slack.com/api/users.admin.setRegular?slack_route=${config.slack.team_id}&user=${data.id}",
+        f"https://slack.com/api/users.admin.setRegular?slack_route=${config.slack.team_id}&user={data.id}",
         headers=headers,
         data=json.dumps(body),
     ) as response:
@@ -97,7 +117,7 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         logging.debug(f"Slack response: {response_json}")
         await send_heartbeat(
             f":neodog_nom_stick: User {data.id} promoted by program {program.name}",
-            [f"```{response_json}```"],
+            [f"```{body}```", f"```{response_json}```"],
             production=True,
         )
 
@@ -124,11 +144,13 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
                 },
             )
 
-        await Signup.update(
+        signups = await Signup.update(
             {Signup.status: SignupStage.PROMOTED, Signup.slack_id: data.id}
             if ok
             else {Signup.status: SignupStage.ERRORED, Signup.slack_id: data.id}
         ).where(Signup.id == signup.id)
+
+        signup = signups[0] if signups else signup
 
         return JSONResponse(
             status_code=200 if ok else 422,
@@ -137,11 +159,11 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
                 "message": "User promoted successfully"
                 if ok
                 else "Failed to promote user",
-                "status": str(verification_status),
+                "status": verification_status.value,
                 "signup": {
                     "id": signup.id,
                     "email": signup.email,
-                    "status": SignupStage.PROMOTED,
+                    "status": signup.status,
                     "program_id": signup.program_id,
                 },
             },

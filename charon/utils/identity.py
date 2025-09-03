@@ -1,6 +1,10 @@
+import logging
 from enum import Enum
 
+from charon.config import config
 from charon.env import env
+
+logger = logging.getLogger(__name__)
 
 
 class VerificationStatus(Enum):
@@ -22,21 +26,18 @@ class VerificationStatus(Enum):
         raise ValueError(f"Unknown VerificationStatus: {value}")
 
 
-async def check_identity(slack_id: str) -> VerificationStatus:
-    api_endpoint = (
-        f"https://identity.hackclub.com/api/external/check?slack_id={slack_id}"
-    )
+async def check_identity(email: str) -> VerificationStatus:
+    api_endpoint = f"{config.identity_base_url}/api/external/check?email={email}"
 
     async with env.http.get(api_endpoint) as response:
         if response.status != 200:
             raise Exception(f"Failed to check identity: {response.status}")
 
         data = await response.json()
-        if not data.get("ok", False):
-            raise Exception(f"Identity API error: {data.get('error', 'Unknown error')}")
 
         status = data.get("result")
         if not status:
             return VerificationStatus.NOT_FOUND
 
+        logger.info(f"Identity check for {email}: {status}")
         return VerificationStatus.from_string(status)
