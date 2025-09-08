@@ -7,8 +7,9 @@ from charon.actions.commands.new_program import new_invite_program_cmd
 from charon.actions.events.app_home_opened import on_app_home_opened
 from charon.actions.events.app_home_opened import open_app_home
 from charon.actions.events.team_join import handle_team_join
-from charon.actions.views.new_program import new_invite_program_modal
+from charon.actions.views.upsert_program import upsert_invite_program_modal
 from charon.env import env
+from charon.views.modals.update_program import get_update_program_modal
 
 app = env.app
 
@@ -25,9 +26,10 @@ async def create_program_btn(ack: AsyncAck, body: dict, client: AsyncWebClient):
 
 
 @app.view("create_program_modal")
-async def create_program_modal(ack: AsyncAck, body: dict, client: AsyncWebClient):
+@app.view("update_program_modal")
+async def upsert_program_modals(ack: AsyncAck, body: dict, client: AsyncWebClient):
     await ack()
-    await new_invite_program_modal(ack, body, client)
+    await upsert_invite_program_modal(ack, body, client)
 
 
 @app.action("approve_program")
@@ -69,3 +71,11 @@ async def home_navigation(ack: AsyncAck, body: dict, client: AsyncWebClient):
     user_id = body["user"]["id"]
     value = body["actions"][0]["action_id"]
     await open_app_home(value, client, user_id)
+
+
+@app.action("manage_program")
+async def manage_program(ack: AsyncAck, body: dict, client: AsyncWebClient):
+    program_id = body["actions"][0]["value"]
+    view = await get_update_program_modal(program_id)
+    await ack()
+    await client.views_open(trigger_id=body["trigger_id"], view=view)

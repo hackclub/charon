@@ -88,10 +88,9 @@ async def get_programs(user: Person | None):
             buttons.append(
                 {
                     "type": "button",
-                    "text": {"type": "plain_text", "text": "Manage", "emoji": True},
+                    "text": {"type": "plain_text", "text": "Edit", "emoji": True},
                     "value": str(program.id),
                     "action_id": "manage_program",
-                    "style": "danger",
                 }
             )
 

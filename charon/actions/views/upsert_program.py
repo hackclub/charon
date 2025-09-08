@@ -4,8 +4,10 @@ import re
 from slack_bolt.async_app import AsyncAck
 from slack_sdk.web.async_client import AsyncWebClient
 
+from charon.actions.events.app_home_opened import open_app_home
 from charon.config import config
 from charon.db.tables import Person
+from charon.db.tables import PersonProgramLink
 from charon.db.tables import Program
 from charon.utils.logging import send_heartbeat
 from charon.views.modals.new_program_submitted import get_new_program_submitted_modal
@@ -13,7 +15,9 @@ from charon.views.modals.new_program_submitted import get_new_program_submitted_
 logger = logging.getLogger(__name__)
 
 
-async def new_invite_program_modal(ack: AsyncAck, body: dict, client: AsyncWebClient):
+async def upsert_invite_program_modal(
+    ack: AsyncAck, body: dict, client: AsyncWebClient
+):
     view = body["view"]
     values = view["state"]["values"]
     program_name = values["program_name"]["program_name"]["value"]
@@ -27,6 +31,9 @@ async def new_invite_program_modal(ack: AsyncAck, body: dict, client: AsyncWebCl
     xoxd_token = values["xoxd_token"]["xoxd_token"]["value"]
     docs_read = "docs" in [c["value"] for c in checkboxes]
     verification_required = "verification" in [c["value"] for c in checkboxes]
+    id = view.get("private_metadata")
+    if id:
+        id = int(id)
 
     user_id = body["user"]["id"]
     errors = {}
@@ -66,6 +73,7 @@ async def new_invite_program_modal(ack: AsyncAck, body: dict, client: AsyncWebCl
         return
 
     unset_program = Program(
+        id=id or None,
         name=program_name,
         mcg_channels=mcg_channels,
         full_channels=full_channels,
@@ -74,16 +82,31 @@ async def new_invite_program_modal(ack: AsyncAck, body: dict, client: AsyncWebCl
         user_id=custom_user_id or None,
         xoxc_token=xoxc_token or None,
         xoxd_token=xoxd_token or None,
-        approved=False,
     )
-    res = await Program.insert(unset_program)
+    if id:
+        res = await Program.update(
+            {
+                Program.name: unset_program.name,
+                Program.mcg_channels: unset_program.mcg_channels,
+                Program.full_channels: unset_program.full_channels,
+                Program.verification_required: unset_program.verification_required,
+                Program.webhook: unset_program.webhook,
+                Program.user_id: unset_program.user_id,
+                Program.xoxc_token: unset_program.xoxc_token,
+                Program.xoxd_token: unset_program.xoxd_token,
+            }
+        ).where(Program.id == id)
+    else:
+        res = await Program.insert(unset_program)
     id = res[0]["id"]
     program = await Program.objects().where(Program.id == id).first()
 
     if not isinstance(program, Program):
         await ack(
             response_action="errors",
-            errors={"program_name": "Failed to create program. Please try again."},
+            errors={
+                "program_name": f"Failed to {'update' if id else 'create'} program. Please try again."
+            },
         )
         return
 
@@ -101,55 +124,74 @@ async def new_invite_program_modal(ack: AsyncAck, body: dict, client: AsyncWebCl
         await Person.insert(*managers)
         managers = await Person.objects().where(Person.slack_id.is_in(program_managers))
 
-    for manager in managers:
-        await manager.add_m2m(program, m2m=Person.programs)
+    existing_links = (
+        await PersonProgramLink.select(PersonProgramLink.user_id)
+        .where(
+            PersonProgramLink.program_id == program.id,
+            PersonProgramLink.user_id.is_in([m.id for m in managers]),
+        )
+        .output(as_list=True)
+    )
+
+    missing_manager_ids = [m.id for m in managers if m.id not in existing_links]
+
+    if missing_manager_ids:
+        links = [
+            PersonProgramLink(user_id=manager_id, program_id=program.id)
+            for manager_id in missing_manager_ids
+        ]
+        await PersonProgramLink.insert(*links)
 
     await send_heartbeat(
-        f":neodog_nom_stick: New program created: {program_name} (ID: {program.id})",
+        f":neodog_nom_stick: New program {'updated' if id else 'created'}: {program_name} (ID: {program.id})",
         client=client,
         production=True,
     )
 
-    text = f"""
-New program created: *{program_name}* (ID: {program.id})
-Managers: {", ".join(f"<@{manager_slack_id}>" for manager_slack_id in program_managers)}
-MCG Channels: {", ".join(f"<#{channel}>" for channel in mcg_channels)}
-Full Channels: {", ".join(f"<#{channel}>" for channel in full_channels)}
-Verification Required: {"Yes" if verification_required else "No"}
-Webhook: {webhook}
-Custom User: {"Yes" if xoxc_token and xoxd_token else "No"}
-    """
-    blocks = [
-        {"type": "section", "text": {"type": "mrkdwn", "text": text}},
-        {"type": "divider"},
-        {
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "Approve"},
-                    "style": "primary",
-                    "action_id": "approve_program",
-                    "value": str(program.id),
-                },
-                {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "Reject"},
-                    "style": "danger",
-                    "action_id": "reject_program",
-                    "value": str(program.id),
-                },
-            ],
-        },
-    ]
-    await client.chat_postMessage(
-        channel=config.slack.applications_channel,
-        blocks=blocks,
-        text=f"New program created: {program_name}",
-        unfurl_links=False,
-        unfurl_media=False,
-    )
+    if not id:
+        text = f"""
+    New program created: *{program_name}* (ID: {program.id})
+    Managers: {", ".join(f"<@{manager_slack_id}>" for manager_slack_id in program_managers)}
+    MCG Channels: {", ".join(f"<#{channel}>" for channel in mcg_channels)}
+    Full Channels: {", ".join(f"<#{channel}>" for channel in full_channels)}
+    Verification Required: {"Yes" if verification_required else "No"}
+    Webhook: {webhook}
+    Custom User: {"Yes" if xoxc_token and xoxd_token else "No"}
+        """
+        blocks = [
+            {"type": "section", "text": {"type": "mrkdwn", "text": text}},
+            {"type": "divider"},
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Approve"},
+                        "style": "primary",
+                        "action_id": "approve_program",
+                        "value": str(program.id),
+                    },
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Reject"},
+                        "style": "danger",
+                        "action_id": "reject_program",
+                        "value": str(program.id),
+                    },
+                ],
+            },
+        ]
+        await client.chat_postMessage(
+            channel=config.slack.applications_channel,
+            blocks=blocks,
+            text=f"New program created: {program_name}",
+            unfurl_links=False,
+            unfurl_media=False,
+        )
 
-    await client.views_open(
-        trigger_id=body["trigger_id"], view=get_new_program_submitted_modal()
-    )
+        await client.views_open(
+            trigger_id=body["trigger_id"], view=get_new_program_submitted_modal()
+        )
+
+    else:
+        await open_app_home("programs", client, user_id)
