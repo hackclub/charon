@@ -39,6 +39,8 @@ class Program(Table):
     verification_required = Boolean(default=False)
     webhook = Varchar(index=True)
     approved = Boolean(default=False)
+    enabled = Boolean(default=True)
+    user_id = Varchar(null=True)
     xoxc_token = Varchar(null=True)
     xoxd_token = Varchar(null=True)
     api_key = Varchar(null=True)
@@ -60,6 +62,7 @@ class PersonProgramLink(Table):
 class Settings(Table):
     id = Serial(primary_key=True)
     global_verification = Boolean(default=False)
+    signup_enabled = Boolean(default=True)
 
     created_at = Timestamp(default=datetime.now)
     updated_at = Timestamp(auto_update=datetime.now)

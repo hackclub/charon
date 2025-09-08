@@ -16,9 +16,9 @@ def get_buttons(person: Person | None, current: str = "dashboard"):
     buttons.append(
         {
             "type": "button",
-            "text": {"type": "plain_text", "text": "My Programs", "emoji": True},
-            "action_id": "my-programs",
-            **({"style": "primary"} if current != "my-programs" else {}),
+            "text": {"type": "plain_text", "text": "Programs", "emoji": True},
+            "action_id": "programs",
+            **({"style": "primary"} if current != "programs" else {}),
         }
     )
 

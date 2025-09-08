@@ -23,6 +23,22 @@ async def approve_reject_program_btn(
     approved = action_id == "approve_program"
     user_id = body["user"]["id"]
 
+    user = await Person.objects().where(Person.slack_id == user_id).first()
+    if not (isinstance(user, Person) and user.admin):
+        logger.error(
+            f"User {user_id} is not an admin and cannot approve/reject programs"
+        )
+        await send_heartbeat(
+            f":warning: <@{user_id}> attempted to approve/reject program `{value}` without admin permissions.",
+            production=True,
+        )
+        await env.slack_client.chat_postEphemeral(
+            user=user_id,
+            channel=body["channel"]["id"],
+            text=":x: You do not have permission to approve or reject programs.",
+        )
+        return
+
     if approved:
         program = await Program.objects().where(Program.id == int(value)).first()
         if isinstance(program, Program):

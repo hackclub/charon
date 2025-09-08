@@ -132,6 +132,20 @@ def get_new_program_modal(user_id: str) -> dict:
             },
             {
                 "type": "input",
+                "block_id": "user_id",
+                "optional": True,
+                "element": {
+                    "type": "users_select",
+                    "placeholder": {"type": "plain_text", "text": "Select a user"},
+                    "action_id": "user_id",
+                },
+                "label": {
+                    "type": "plain_text",
+                    "text": "Slack user to use for inviting (must be an admin)",
+                },
+            },
+            {
+                "type": "input",
                 "block_id": "xoxc_token",
                 "optional": True,
                 "element": {"type": "plain_text_input", "action_id": "xoxc_token"},

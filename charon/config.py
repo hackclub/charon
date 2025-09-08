@@ -8,6 +8,7 @@ class SlackConfig(BaseSettings):
     bot_token: str
     signing_secret: str
     app_token: str | None
+    user_id: str
     xoxc_token: str
     xoxd_token: str
     team_id: str

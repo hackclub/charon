@@ -22,6 +22,7 @@ async def new_invite_program_modal(ack: AsyncAck, body: dict, client: AsyncWebCl
     full_channels = values["full_channels"]["full_channels"]["selected_channels"]
     webhook = values["webhook"]["webhook"]["value"]
     checkboxes = values["checkboxes"]["checkboxes"]["selected_options"]
+    custom_user_id = values["user_id"]["user_id"]["selected_user"]
     xoxc_token = values["xoxc_token"]["xoxc_token"]["value"]
     xoxd_token = values["xoxd_token"]["xoxd_token"]["value"]
     docs_read = "docs" in [c["value"] for c in checkboxes]
@@ -51,6 +52,10 @@ async def new_invite_program_modal(ack: AsyncAck, body: dict, client: AsyncWebCl
         errors["xoxd_token"] = "XOXD token is required if XOXC token is provided."
     if xoxd_token and not xoxc_token:
         errors["xoxc_token"] = "XOXC token is required if XOXD token is provided."
+    if custom_user_id and (not xoxc_token or not xoxd_token):
+        errors["user_id"] = "Both XOXC and XOXD tokens are required for a custom user."
+    if not custom_user_id and (xoxc_token or xoxd_token):
+        errors["user_id"] = "You must select a custom user if providing tokens."
     if not docs_read:
         errors["checkboxes"] = (
             "You must read the documentation before creating a program."
@@ -66,6 +71,7 @@ async def new_invite_program_modal(ack: AsyncAck, body: dict, client: AsyncWebCl
         full_channels=full_channels,
         verification_required=verification_required,
         webhook=webhook,
+        user_id=custom_user_id or None,
         xoxc_token=xoxc_token or None,
         xoxd_token=xoxd_token or None,
         approved=False,
