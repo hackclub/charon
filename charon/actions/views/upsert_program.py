@@ -82,7 +82,9 @@ async def upsert_invite_program_modal(
         xoxc_token=xoxc_token or None,
         xoxd_token=xoxd_token or None,
     )
+    existing_program = False
     if id:
+        existing_program = True
         res = await Program.update(
             {
                 Program.name: unset_program.name,
@@ -96,6 +98,7 @@ async def upsert_invite_program_modal(
             }
         ).where(Program.id == id)
     else:
+        existing_program = False
         res = await Program.insert(unset_program)
     id = res[0]["id"]
     program = await Program.objects().where(Program.id == id).first()
@@ -104,7 +107,7 @@ async def upsert_invite_program_modal(
         await ack(
             response_action="errors",
             errors={
-                "program_name": f"Failed to {'update' if id else 'create'} program. Please try again."
+                "program_name": f"Failed to {'update' if existing_program else 'create'} program. Please try again."
             },
         )
         return
@@ -147,7 +150,7 @@ async def upsert_invite_program_modal(
         production=True,
     )
 
-    if not id:
+    if not existing_program:
         text = f"""
     New program created: *{program_name}* (ID: {program.id})
     Managers: {", ".join(f"<@{manager_slack_id}>" for manager_slack_id in program_managers)}
