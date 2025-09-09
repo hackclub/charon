@@ -1,7 +1,10 @@
+from slack_bolt.async_app import AsyncAck
+from slack_sdk.web.async_client import AsyncWebClient
+
 from charon.views.modals.new_program import get_new_program_modal
 
 
-async def create_invite_program_btn(ack, body: dict, client):
+async def create_invite_program_btn(ack: AsyncAck, body: dict, client: AsyncWebClient):
     """
     Handle the create program button action.
     """

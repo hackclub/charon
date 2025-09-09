@@ -3,6 +3,7 @@ from slack_sdk.web.async_client import AsyncWebClient
 
 from charon.actions.buttons.approve_reject_program import approve_reject_program_btn
 from charon.actions.buttons.create_program import create_invite_program_btn
+from charon.actions.buttons.toggle_invites import toggle_invites_btn
 from charon.actions.commands.new_program import new_invite_program_cmd
 from charon.actions.events.app_home_opened import on_app_home_opened
 from charon.actions.events.app_home_opened import open_app_home
@@ -79,3 +80,17 @@ async def manage_program(ack: AsyncAck, body: dict, client: AsyncWebClient):
     view = await get_update_program_modal(program_id)
     await ack()
     await client.views_open(trigger_id=body["trigger_id"], view=view)
+
+
+@app.action("view_program_details")
+async def view_program_details(ack: AsyncAck, body: dict, client: AsyncWebClient):
+    program_id = body["actions"][0]["value"]
+    user_id = body["user"]["id"]
+    await ack()
+    await open_app_home("program", client, user_id, id=program_id)
+
+
+@app.action("toggle_invites")
+async def toggle_invites(ack: AsyncAck, body: dict, client: AsyncWebClient):
+    await ack()
+    await toggle_invites_btn(ack, body, client)

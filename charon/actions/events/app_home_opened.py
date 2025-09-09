@@ -9,6 +9,7 @@ from charon.utils.logging import send_heartbeat
 from charon.views.home.error import get_error_view
 from charon.views.home.loading import get_loading_view
 from charon.views.home.pages.dashboard import get_dashboard_view
+from charon.views.home.pages.program import get_program_view
 from charon.views.home.pages.programs import get_programs_view
 
 
@@ -23,7 +24,9 @@ async def on_app_home_opened(event: dict, client: AsyncWebClient):
     await open_app_home("default", client, user_id)
 
 
-async def open_app_home(home_type: str, client: AsyncWebClient, user_id: str):
+async def open_app_home(
+    home_type: str, client: AsyncWebClient, user_id: str, id: str | None = None
+):
     try:
         await client.views_publish(view=get_loading_view(), user_id=user_id)
         user = await Person.objects().where(Person.slack_id == user_id).first()
@@ -32,6 +35,11 @@ async def open_app_home(home_type: str, client: AsyncWebClient, user_id: str):
                 view = await get_dashboard_view(user, user_id)
             case "programs":
                 view = await get_programs_view(user, user_id)
+            case "program":
+                if not id:
+                    view = get_error_view("No program ID provided.")
+                else:
+                    view = await get_program_view(user, id=id)
             case "admin":
                 view = get_error_view(
                     "This is a placeholder for the admin page, which is not yet implemented."
