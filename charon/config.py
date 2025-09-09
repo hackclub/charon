@@ -7,7 +7,7 @@ from pydantic_settings import SettingsConfigDict
 class SlackConfig(BaseSettings):
     bot_token: str
     signing_secret: str
-    app_token: str | None
+    app_token: str | None = None
     user_id: str
     xoxc_token: str
     xoxd_token: str
@@ -18,7 +18,9 @@ class SlackConfig(BaseSettings):
 
 
 class Config(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_nested_delimiter="__")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_nested_delimiter="__", extra="ignore"
+    )
     slack: SlackConfig
     database_url: PostgresDsn
     environment: str = "development"
