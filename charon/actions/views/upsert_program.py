@@ -73,7 +73,6 @@ async def upsert_invite_program_modal(
         return
 
     unset_program = Program(
-        id=id or None,
         name=program_name,
         mcg_channels=mcg_channels,
         full_channels=full_channels,
