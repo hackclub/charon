@@ -8,7 +8,7 @@ Charon is an API that you can integrate into your program's website to easily in
 
 ## Resources
 - [Tutorial](/docs/category/tutorial)
-- [API Reference](/docs/category/api)
-- [FAQ](/docs/category/faq)
+- [API Reference](/docs/category/methods)
+- [FAQ](/docs/faq)
 - [#charon-help](https://hackclub.slack.com/archives/C09E9AS4PMK)
 - [GitHub Repository](https://github.com/hackclub/charon)

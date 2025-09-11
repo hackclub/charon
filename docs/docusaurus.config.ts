@@ -101,7 +101,7 @@ const config: Config = {
           ],
         }
       ],
-      copyright: `Made with <3 by Amber @ Hack Club`,
+      copyright: 'Made by Amber @ Hack Club',
     },
     prism: {
       theme: prismThemes.github,
