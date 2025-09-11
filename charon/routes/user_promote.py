@@ -46,8 +46,8 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         return JSONResponse(
             status_code=404,
             content={
-                "error": "user_not_found",
-                "message": f"User with ID {data.id} not found",
+                "ok": False,
+                "message": "user_not_found",
             },
         )
     user = user_info.get("user", {})
@@ -57,8 +57,8 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         return JSONResponse(
             status_code=422,
             content={
-                "error": "email_not_found",
-                "message": "User does not have an email address",
+                "ok": False,
+                "message": "email_not_found",
             },
         )
 
@@ -69,9 +69,8 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         return JSONResponse(
             status_code=422,
             content={
-                "error": "verification_failed",
-                "message": "User is over 18 and not eligible for promotion",
-                "status": str(verification_status),
+                "ok": False,
+                "message": "adult",
             },
         )
     if (
@@ -85,8 +84,8 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         return JSONResponse(
             status_code=422,
             content={
-                "error": "verification_failed",
-                "message": "User does not have a verified identity",
+                "ok": False,
+                "message": "verification_failed",
             },
         )
 
@@ -139,8 +138,8 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
             return JSONResponse(
                 status_code=404,
                 content={
-                    "error": "signup_not_found",
-                    "message": f"Signup not found for user {data.id}",
+                    "ok": False,
+                    "message": "signup_not_found",
                 },
             )
 
@@ -156,10 +155,7 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
             status_code=200 if ok else 422,
             content={
                 "ok": ok,
-                "message": "User promoted successfully"
-                if ok
-                else "Failed to promote user",
-                "status": verification_status.value,
+                "message": "promotion_success" if ok else "promotion_fail",
                 "signup": {
                     "id": signup.id,
                     "email": signup.email,

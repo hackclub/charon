@@ -15,6 +15,7 @@ from charon.routes import promote_user
 from charon.routes import security
 from charon.routes import UserInviteRequest
 from charon.routes import UserPromoteRequest
+from charon.utils.logging import send_heartbeat
 from charon.utils.slack import app as slack_app
 
 req_handler = AsyncSlackRequestHandler(slack_app)
@@ -40,8 +41,13 @@ async def user_invite(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     req: UserInviteRequest,
 ):
-    program = await check_auth(credentials)
-    return await invite_user(req, program)
+    try:
+        program = await check_auth(credentials)
+        res, msg = await invite_user(req, program)
+        return {"ok": res, "message": msg}
+    except Exception as e:
+        await send_heartbeat(str(e), production=True)
+        return {"ok": False, "message": "unknown_error"}
 
 
 @app.post("/user/promote")
@@ -49,5 +55,9 @@ async def user_promote(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     req: UserPromoteRequest,
 ):
-    program = await check_auth(credentials)
-    return await promote_user(req, program)
+    try:
+        program = await check_auth(credentials)
+        return await promote_user(req, program)
+    except Exception as e:
+        await send_heartbeat(str(e), production=True)
+        return {"ok": False, "message": "unknown_error"}

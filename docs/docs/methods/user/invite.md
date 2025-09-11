@@ -34,7 +34,7 @@ A successful response will return a JSON object with the following structure:
 ```json
 {
   "ok": true,
-  "msg": "",
+  "message": "",
 }
 ```
 
@@ -46,7 +46,7 @@ A successful response will return a JSON object with the following structure:
 | `already_in_time` | The user is already in Slack, Charon has added them to the channels.           |
 
 
-### Errors
+### Error Messages
 
 | Error Code          | Description                                      |
 |---------------------|--------------------------------------------------|

@@ -27,6 +27,7 @@ async def upsert_invite_program_modal(
     webhook = values["webhook"]["webhook"]["value"]
     checkboxes = values["checkboxes"]["checkboxes"]["selected_options"]
     custom_user_id = values["user_id"]["user_id"]["selected_user"]
+    user_token = values["user_token"]["user_token"]["value"]
     xoxc_token = values["xoxc_token"]["xoxc_token"]["value"]
     xoxd_token = values["xoxd_token"]["xoxd_token"]["value"]
     docs_read = "docs" in [c["value"] for c in checkboxes]
@@ -55,14 +56,21 @@ async def upsert_invite_program_modal(
         webhook,
     ):
         errors["webhook"] = "Invalid webhook URL format."
-    if xoxc_token and not xoxd_token:
-        errors["xoxd_token"] = "XOXD token is required if XOXC token is provided."
-    if xoxd_token and not xoxc_token:
-        errors["xoxc_token"] = "XOXC token is required if XOXD token is provided."
-    if custom_user_id and (not xoxc_token or not xoxd_token):
-        errors["user_id"] = "Both XOXC and XOXD tokens are required for a custom user."
-    if not custom_user_id and (xoxc_token or xoxd_token):
-        errors["user_id"] = "You must select a custom user if providing tokens."
+        if xoxc_token and not xoxd_token:
+            errors["xoxd_token"] = "XOXD token is required if XOXC token is provided."
+        if xoxd_token and not xoxc_token:
+            errors["xoxc_token"] = "XOXC token is required if XOXD token is provided."
+        if custom_user_id and (not xoxc_token or not xoxd_token):
+            errors["user_id"] = (
+                "Both XOXC and XOXD tokens are required for a custom user."
+            )
+        if not custom_user_id and (xoxc_token or xoxd_token):
+            errors["user_id"] = "You must select a custom user if providing tokens."
+        if xoxc_token and xoxd_token and custom_user_id and not user_token:
+            errors["user_token"] = (
+                "User token is required if XOXC token, XOXD token, and custom user ID are provided."
+            )
+
     if not docs_read:
         errors["checkboxes"] = (
             "You must read the documentation before creating a program."

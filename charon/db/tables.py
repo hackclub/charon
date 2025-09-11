@@ -41,6 +41,7 @@ class Program(Table):
     approved = Boolean(default=False)
     enabled = Boolean(default=True)
     user_id = Varchar(null=True)
+    user_token = Varchar(null=True)
     xoxc_token = Varchar(null=True)
     xoxd_token = Varchar(null=True)
     api_key = Varchar(null=True)

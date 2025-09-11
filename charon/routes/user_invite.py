@@ -23,7 +23,7 @@ class UserInviteRequest(BaseModel):
 logger = logging.getLogger(__name__)
 
 
-async def invite_user(data: UserInviteRequest, program: Program) -> bool:
+async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, str]:
     """
     Handle user invitation requests.
     """
@@ -49,6 +49,7 @@ async def invite_user(data: UserInviteRequest, program: Program) -> bool:
         "restricted": True,
         "channels": channels_str,
     }
+    msg = "successfully_invited"
 
     async with env.http.post(
         "https://slack.com/api/users.admin.inviteBulk",
@@ -74,6 +75,23 @@ async def invite_user(data: UserInviteRequest, program: Program) -> bool:
                 production=True,
             )
             ok = False
+            err = response_json.get("error", "unknown_error")
+            msg = err
+            if err == "already_invited" or err == "already_in_team":
+                ok = True  # Treat as success for our purposes
+                # invite them to the channels if they are already in the team
+                user_info = await env.slack_client.users_lookupByEmail(email=data.email)
+                if user_info.get("ok", False):
+                    user_id = user_info.get("user", {}).get("id")
+                    if user_id:
+                        token = program.user_token or config.slack.user_token
+                        for channel in channels:
+                            await env.slack_client.conversations_invite(
+                                channel=channel, users=user_id, token=token
+                            )
+                        msg = "already_in_team"
+                        return True, msg
+            return False, msg
 
         signup = Signup(
             email=data.email,
@@ -82,4 +100,4 @@ async def invite_user(data: UserInviteRequest, program: Program) -> bool:
             status=SignupStage.ERRORED if not ok else SignupStage.INVITED,
         )
         request = await Signup.insert(signup)
-        return True if request else False
+        return (True, msg) if request else (False, msg)

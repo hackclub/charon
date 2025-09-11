@@ -25,7 +25,7 @@
 
 ---
 ## Usage info
-This endpoint is used to invite a user to the Slack workspace as a multi-channel guest. If the user is already a member of the workspace, they will be added to the programs channels.
+This endpoint is used to promote a mulit-channel guest to a full member. They'll also be added to the channels specified in the `channels` argument or in Charon's settings (default).
 
 ## Response
 A successful response will return a JSON object with the following structure:
@@ -33,7 +33,22 @@ A successful response will return a JSON object with the following structure:
 ```json
 {
   "ok": true,
-  "msg": "",
+  "message": "promotion_success",
+  "signup": {
+    "id": "U12345678",
+    "email": "charon@hackclub.com",
+    "status": "invited",
+    "program_id": 1
+  }
+}
+```
+
+An error response will return a JSON object with the following structure:
+
+```json
+{
+  "ok": false,
+  "message": "email_not_found"
 }
 ```
 
@@ -41,17 +56,17 @@ A successful response will return a JSON object with the following structure:
 
 | Message            | Description                                      |
 |--------------------|--------------------------------------------------|
-| `user_invited`     | The user has been successfully invited.          |
+| `promotion_success`     | The user has been successfully promoted.          |
 | `already_in_time` | The user is already in Slack, Charon has added them to the channels.           |
 
 
-### Errors
+### Error Messages
 
 | Error Code          | Description                                      |
 |---------------------|--------------------------------------------------|
-| `invalid_email`     | The provided email address is not valid.         |
-| `already_invited`   | The user has already been invited.               |
+| `email_not_found`   | Could not find the user's email                  |
+| `adult`             | The user is an adult and cannot be promoted.     |
+| `verificaiton_failed` | The user hasn't got an eligible verification.  |
+| `signup_not_found`  | User not found in Charon's database.             |
+| `promotion_fail`    | Something went wrong somewhere :0                |
 | `unknown_error`     | An unknown error occurred.                       |
-
-Other error codes could be returned if they are given by Slack. Do not use this as a comprehensive list of errors.
-
