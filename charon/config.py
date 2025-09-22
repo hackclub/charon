@@ -28,6 +28,7 @@ class Config(BaseSettings):
     port: int = 3000
     secret_key: str
     identity_base_url: str = ""
+    bloom_token: str | None = None
 
     @model_validator(mode="after")
     def set_identity_base_url(self):
