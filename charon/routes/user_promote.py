@@ -152,7 +152,7 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         signup = signups[0] if signups else signup
 
         # Dispatch the upgrade to Professor Bloom
-        if config.bloom_token is not None:
+        if config.bloom_token:
             env.http.post(
                 f"https://professorbloom.hackclub.com/webhook/charon/{config.bloom_token}",
                 data=json.dumps({
