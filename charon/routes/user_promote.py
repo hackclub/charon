@@ -158,7 +158,7 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
                 data=json.dumps({
                     "user_id": data.id,
                     "program_id": program.id,
-                    "program_name": program.name
+                    "program_name": program.name,
                     "action": "promote"
                 }),
                 headers={"Content-Type": "application/json"}
