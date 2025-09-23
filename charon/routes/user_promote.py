@@ -159,7 +159,7 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
                     "user_id": data.id,
                     "program_id": program.id,
                     "program_name": program.name,
-                    "action": "promote"
+                    "action": "promotion"
                 }),
                 headers={"Content-Type": "application/json"}
             )
