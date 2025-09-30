@@ -151,6 +151,30 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
 
         signup = signups[0] if signups else signup
 
+        # Dispatch the upgrade to Professor Bloom
+        if config.bloom_token:
+            async with env.http.post(
+                f"https://professorbloom.hackclub.com/webhook/charon/{config.bloom_token}",
+                data=json.dumps({
+                    "user_id": data.id,
+                    "program_id": program.id,
+                    "program_name": program.name,
+                    "action": "promotion"
+                }),
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                if response.ok == False:
+                    text = await response.text()
+                    logger.warning(
+                        f"Failed to dispatch promotion of {data.id} to Professor Bloom: {text}"
+                    )
+                    await send_heartbeat(
+                        f":neodog_sad: Failed to dispatch promotion of `{data.id}` to Professor Bloom: `{text}`",
+                        [f"```{response_json}```"],
+                        production=True,
+                    )
+                    
+
         return JSONResponse(
             status_code=200 if ok else 422,
             content={
