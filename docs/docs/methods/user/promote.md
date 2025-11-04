@@ -1,10 +1,10 @@
-# `users/promote` method
+# `user/promote` method
 
 ## Facts
 
 ---
 - **Description**: Promote a multi-channel guest to a full member
-- **Method Access**: `POST https://charon.hackclub.com/users/promote`
+- **Method Access**: `POST https://charon.hackclub.com/user/promote`
 - **Authentication**: Bearer Token in `Authorization` header
 - **Content-Type**: `application/json`
 

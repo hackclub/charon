@@ -1,10 +1,10 @@
-# `users/invite` method
+# `user/invite` method
 
 ## Facts
 
 ---
 - **Description**: Invite a user to the workspace
-- **Method Access**: `POST https://charon.hackclub.com/users/invite`
+- **Method Access**: `POST https://charon.hackclub.com/user/invite`
 - **Authentication**: Bearer Token in `Authorization` header
 - **Content-Type**: `application/json`
 
