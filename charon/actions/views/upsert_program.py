@@ -89,6 +89,7 @@ async def upsert_invite_program_modal(
         user_id=custom_user_id or None,
         xoxc_token=xoxc_token or None,
         xoxd_token=xoxd_token or None,
+        user_token=user_token or None,
     )
     existing_program = False
     program_id = None
@@ -106,6 +107,7 @@ async def upsert_invite_program_modal(
                 Program.user_id: unset_program.user_id,
                 Program.xoxc_token: unset_program.xoxc_token,
                 Program.xoxd_token: unset_program.xoxd_token,
+                Program.user_token: unset_program.user_token,
             }
         ).where(Program.id == id)
         program_id = id
