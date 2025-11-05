@@ -91,9 +91,12 @@ async def upsert_invite_program_modal(
         xoxd_token=xoxd_token or None,
     )
     existing_program = False
+    program_id = None
+
     if id:
+        # We're updating an existing program. Use the provided id as the program id.
         existing_program = True
-        res = await Program.update(
+        await Program.update(
             {
                 Program.name: unset_program.name,
                 Program.mcg_channels: unset_program.mcg_channels,
@@ -105,10 +108,26 @@ async def upsert_invite_program_modal(
                 Program.xoxd_token: unset_program.xoxd_token,
             }
         ).where(Program.id == id)
+        program_id = id
     else:
+        # Insert a new program. The insert may return a list with the new id, but it
+        # might also return an empty list on failure — handle that safely.
         existing_program = False
         res = await Program.insert(unset_program)
-    id = res[0]["id"]
+        if res and isinstance(res, (list, tuple)) and len(res) > 0 and "id" in res[0]:
+            program_id = res[0]["id"]
+
+    if not program_id:
+        await ack(
+            response_action="errors",
+            errors={
+                "program_name": f"Failed to {'update' if existing_program else 'create'} program. Please try again."
+            },
+        )
+        return
+
+    # Normalize to `id` for the rest of the function
+    id = program_id
     program = await Program.objects().where(Program.id == id).first()
 
     if not isinstance(program, Program):
