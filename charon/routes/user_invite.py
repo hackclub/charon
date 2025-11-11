@@ -5,6 +5,7 @@ from urllib.parse import quote
 from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic import IPvAnyAddress
+from slack_sdk.errors import SlackApiError
 
 from charon.config import config
 from charon.db.tables import Program
@@ -87,9 +88,19 @@ async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, 
                     if user_id:
                         token = program.user_token or config.slack.user_token
                         for channel in channels:
-                            await env.slack_client.conversations_invite(
-                                channel=channel, users=user_id, token=token
-                            )
+                            try:
+                                await env.slack_client.conversations_invite(
+                                    channel=channel, users=user_id, token=token
+                                )
+                            except SlackApiError as e:
+                                if e.response["error"] == "already_in_channel":
+                                    continue
+                                if e.response["error"] == "cant_invite_self":
+                                    continue
+                                logger.error(
+                                    f"Failed to invite existing user {data.email} to channel {channel}: {e.response['error']}"
+                                )
+                                continue
                         msg = "already_in_team"
                         return True, msg
             return False, msg
