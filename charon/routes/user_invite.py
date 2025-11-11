@@ -63,9 +63,10 @@ async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, 
             [f"```{response_json}```"],
             production=True,
         )
+        invite = response_json.get("invites", [{}])[0]
 
-        ok = True
-        if not response_json["ok"]:
+        ok = invite.get("ok", False)
+        if not ok:
             logger.error(
                 f"Failed to invite user {data.email}: {response_json.get('error', 'Unknown error')}"
             )
@@ -75,7 +76,7 @@ async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, 
                 production=True,
             )
             ok = False
-            err = response_json.get("error", "unknown_error")
+            err = invite.get("error", "unknown_error")
             msg = err
             if err == "already_invited" or err == "already_in_team":
                 ok = True  # Treat as success for our purposes

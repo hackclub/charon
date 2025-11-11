@@ -57,7 +57,7 @@ An error response will return a JSON object with the following structure:
 | Message            | Description                                      |
 |--------------------|--------------------------------------------------|
 | `promotion_success`     | The user has been successfully promoted.          |
-| `already_in_time` | The user is already in Slack, Charon has added them to the channels.           |
+| `already_in_team` | The user is already in Slack, Charon has added them to the channels.           |
 
 
 ### Error Messages
