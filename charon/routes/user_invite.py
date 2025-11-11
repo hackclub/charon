@@ -59,25 +59,18 @@ async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, 
     ) as response:
         response_json = await response.json()
         logging.debug(f"Slack response: {response_json}")
-        await send_heartbeat(
-            f":neodog_nom_stick: User {data.email} invited to channels {channels_str} for program {program.name}",
-            [f"```{response_json}```"],
-            production=True,
-        )
         invite = response_json.get("invites", [{}])[0]
 
         ok = invite.get("ok", False)
         if not ok:
-            logger.error(
-                f"Failed to invite user {data.email}: {response_json.get('error', 'Unknown error')}"
-            )
+            err = invite.get("error", "unknown_error")
+            logger.error(f"Failed to invite user {data.email}: {err}")
             await send_heartbeat(
                 f":neodog_nom_stick: Failed to invite user {data.email} to channels {channels_str} for program {program.name}",
                 [f"```{response_json}```"],
                 production=True,
             )
             ok = False
-            err = invite.get("error", "unknown_error")
             msg = err
             if err == "already_invited" or err == "already_in_team":
                 ok = True  # Treat as success for our purposes
@@ -104,6 +97,12 @@ async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, 
                         msg = "already_in_team"
                         return True, msg
             return False, msg
+
+        await send_heartbeat(
+            f":neodog_nom_stick: User {data.email} invited to channels {channels_str} for program {program.name}",
+            [f"```{response_json}```"],
+            production=True,
+        )
 
         signup = Signup(
             email=data.email,
