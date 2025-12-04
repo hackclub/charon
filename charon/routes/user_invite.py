@@ -97,6 +97,15 @@ async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, 
                                 continue
                         msg = "already_in_team"
                         return True, msg
+
+            # Save errored signup to database for retry later
+            signup = Signup(
+                email=data.email,
+                ip=str(data.ip),
+                program_id=program.id,
+                status=SignupStage.ERRORED,
+            )
+            await Signup.insert(signup)
             return False, msg
 
         await send_heartbeat(
@@ -109,7 +118,7 @@ async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, 
             email=data.email,
             ip=str(data.ip),
             program_id=program.id,
-            status=SignupStage.ERRORED if not ok else SignupStage.INVITED,
+            status=SignupStage.INVITED,
         )
         request = await Signup.insert(signup)
         return (True, msg) if request else (False, msg)
