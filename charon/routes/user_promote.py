@@ -105,10 +105,10 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         "Authorization": f"Bearer {xoxc}",
     }
 
-    body = {"user": data.id}
+    body = {"user": data.id, "team_id": config.slack.team_id}
 
     async with env.http.post(
-        f"https://slack.com/api/users.admin.setRegular?slack_route=${config.slack.team_id}&user={data.id}",
+        f"https://slack.com/api/users.admin.setRegular?slack_route=${config.slack.team_id}&user={data.id}&team_id={config.slack.team_id}",
         headers=headers,
         data=json.dumps(body),
     ) as response:
@@ -155,15 +155,17 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
         if config.bloom_token:
             async with env.http.post(
                 f"https://professorbloom.hackclub.com/webhook/charon/{config.bloom_token}",
-                data=json.dumps({
-                    "user_id": data.id,
-                    "program_id": program.id,
-                    "program_name": program.name,
-                    "action": "promotion"
-                }),
-                headers={"Content-Type": "application/json"}
+                data=json.dumps(
+                    {
+                        "user_id": data.id,
+                        "program_id": program.id,
+                        "program_name": program.name,
+                        "action": "promotion",
+                    }
+                ),
+                headers={"Content-Type": "application/json"},
             ) as response:
-                if response.ok == False:
+                if not response.ok:
                     text = await response.text()
                     logger.warning(
                         f"Failed to dispatch promotion of {data.id} to Professor Bloom: {text}"
@@ -173,7 +175,6 @@ async def promote_user(data: UserPromoteRequest, program: Program) -> JSONRespon
                         [f"```{response_json}```"],
                         production=True,
                     )
-                    
 
         return JSONResponse(
             status_code=200 if ok else 422,

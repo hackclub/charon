@@ -49,6 +49,7 @@ async def invite_user(data: UserInviteRequest, program: Program) -> tuple[bool, 
         "invites": [{"email": data.email, "type": "restricted", "mode": "manual"}],
         "restricted": True,
         "channels": channels_str,
+        "team_id": config.slack.team_id,
     }
     msg = "successfully_invited"
 
